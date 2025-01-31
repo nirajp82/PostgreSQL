@@ -13,6 +13,8 @@ While autovacuum is essential, it isn't a one-size-fits-all solution. It require
 
 Thus, tuning autovacuum correctly is critical for maintaining optimal database performance and avoiding problems like performance degradation or excessive storage usage.
 
+- **Note::** - By default its On, Do not turn off. 
+
 ---
 
 ### Common Autovacuum Problems and Solutions with Queries
