@@ -1,0 +1,194 @@
+### Optimizing Autovacuum: PostgreSQL's Vacuum Process
+
+#### What is Vacuum and Autovacuum?
+In PostgreSQL, when you **update** or **delete** a row, the old version of that row isn't immediately removed. Instead, a new version is created, leaving the old one as a **"dead tuple"** or **obsolete tuple**. This approach allows other database connections to continue accessing the older version without interruption. However, over time, these dead tuples accumulate and consume disk space.
+
+The **vacuum** process cleans up these dead tuples, reclaiming disk space and improving performance. You can run vacuum manually, but PostgreSQL also provides **autovacuum**, which is a background process that automatically triggers vacuuming on tables when necessary. Autovacuum runs periodically (default is every minute), checks which tables need vacuuming based on the number of dead tuples and inserts, and initiates vacuum processes for those tables.
+
+#### Why Tune Autovacuum?
+While autovacuum is essential, it isn't a one-size-fits-all solution. It requires proper tuning to work effectively. The optimal settings for autovacuum depend on the workload and size of the database. For example:
+
+- **Small Database, Low Transaction Rate**: Overly aggressive vacuuming can consume excessive resources, negatively impacting query performance.
+- **Large Database, High Transaction Rate**: If autovacuum isn't aggressive enough, it can lead to excessive bloat, consuming storage and slowing down queries.
+
+Thus, tuning autovacuum correctly is critical for maintaining optimal database performance and avoiding problems like performance degradation or excessive storage usage.
+
+---
+
+### Common Autovacuum Problems and Solutions with Queries
+
+---
+
+#### 1. **Vacuum Isn't Triggered Often Enough**
+Autovacuum triggers vacuuming based on specific thresholds and scale factors. Here’s how to monitor if vacuum isn’t running often enough:
+
+**Key Parameters**:
+- `autovacuum_vacuum_scale_factor`
+- `autovacuum_vacuum_insert_scale_factor`
+
+**Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat and slower queries.
+
+**Solution**: Adjust the scale factors based on the table size and growth rate. You can also monitor when the last autovacuum ran using the `pg_stat_user_tables` view.
+
+**Query to check the last autovacuum run**:
+```sql
+SELECT
+    relname,
+    last_vacuum,
+    last_autovacuum,
+    n_dead_tup,
+    n_live_tup
+FROM
+    pg_stat_user_tables
+WHERE
+    schemaname = 'public';  -- Or your specific schema
+```
+This query shows the last time vacuum and autovacuum were run on each table, as well as the number of dead tuples. If `last_autovacuum` is too old, it may indicate that autovacuum isn’t running often enough.
+
+---
+
+#### 2. **Vacuum Running Too Slowly**
+If autovacuum is running too slowly, it might not be completing fast enough to keep up with the workload, leading to bloat.
+
+**Signs of the problem**: Constantly running autovacuum processes, rising bloat, and slow queries.
+
+**Solution**:
+- **Disable Cost Limiting**: PostgreSQL applies a built-in cost-based limit for vacuum processes, which can slow them down on SSDs or systems with ample resources.
+- **Increase Workers**: Allow more workers to vacuum multiple tables concurrently.
+- **Diagnose Slowness**: Use `pg_stat_progress_vacuum` to pinpoint the bottleneck (e.g., heap scanning or index vacuuming).
+- **Optimize Heap Scanning and Index Vacuuming**: Increase buffer sizes and workers for parallel index vacuuming.
+
+**Queries to help diagnose slowness**:
+
+- **Check autovacuum worker status**:
+```sql
+SELECT * FROM pg_stat_activity
+WHERE backend_type = 'autovacuum worker';
+```
+This query will show you all autovacuum workers that are currently running. If you see too many, it might indicate that vacuuming is slow and needs tuning.
+
+- **Monitor progress of running vacuum**:
+```sql
+SELECT
+    relid::regclass AS table_name,
+    phase,
+    heap_blks_total,
+    heap_blks_scanned,
+    heap_blks_vacuumed
+FROM
+    pg_stat_progress_vacuum
+WHERE
+    phase = 'scan heap' OR phase = 'vacuum heap';
+```
+This query shows the current status of vacuuming processes, including how much of the table has been processed and the current phase (heap scan or vacuum).
+
+- **Check if vacuum is slow due to cost delay**:
+```sql
+SHOW autovacuum_cost_delay;
+SHOW autovacuum_cost_limit;
+```
+If `autovacuum_cost_delay` is set to a non-zero value, you may want to consider reducing it or setting it to 0 for faster vacuuming, especially on SSDs.
+
+---
+
+#### 3. **Dead Tuples Not Being Removed After Vacuum**
+Sometimes, even after vacuum runs, dead tuples remain. This happens when other processes still need those rows, such as long-running transactions or replication conflicts.
+
+**Possible causes**:
+- **Long-Running Backends**
+- **Standby Queries**
+- **Unused Replication Slots**
+- **Uncommitted Prepared Transactions**
+
+**Solution**:
+- **Long-Running Backends**: Identify and terminate long-running queries.
+- **Standby Queries**: Balance hot standby feedback with vacuum defer cleanup age.
+- **Unused Replication Slots**: Drop unused replication slots.
+- **Uncommitted Prepared Transactions**: Rollback or commit prepared transactions.
+
+**Queries to help troubleshoot dead tuples**:
+
+- **Check for long-running transactions**:
+```sql
+SELECT pid, usename, state, query, age(clock_timestamp(), query_start) AS duration
+FROM pg_stat_activity
+WHERE state != 'idle'
+ORDER BY duration DESC;
+```
+This will show you long-running queries and their durations. You can identify and terminate long-running queries that may be holding onto old tuples.
+
+- **Check for replication slot issues**:
+```sql
+SELECT * FROM pg_replication_slots;
+```
+If you see any replication slots that are "stuck" or unused, they might be preventing vacuum from cleaning up dead tuples. Drop unused slots using:
+```sql
+SELECT pg_drop_replication_slot('slot_name');
+```
+
+- **Identify uncommitted prepared transactions**:
+```sql
+SELECT * FROM pg_prepared_xacts;
+```
+If you have uncommitted transactions here, you may need to commit or roll them back to allow vacuum to proceed.
+
+---
+
+#### 4. **Vacuum Terminating Itself**
+Vacuum might terminate early if it encounters lock contention, especially with DDL operations.
+
+**Solution**: Schedule vacuum during off-peak hours to avoid conflicts with DDL operations.
+
+**Query to monitor lock contention**:
+```sql
+SELECT
+    pid,
+    blocked_pid,
+    blocked_user,
+    query,
+    age(clock_timestamp(), query_start) AS duration
+FROM pg_locks l
+JOIN pg_stat_activity a ON a.pid = l.pid
+WHERE l.granted = false;
+```
+This query helps identify blocked processes, especially when vacuuming encounters DDL locks.
+
+---
+
+#### 5. **Transaction ID (XID) Wraparound**
+PostgreSQL uses **32-bit transaction IDs (XIDs)**, meaning there’s a limit to how many transactions can occur. When nearing the limit, PostgreSQL will trigger a wraparound vacuum to free up transaction IDs. This is critical for avoiding downtime.
+
+**Solution**: Ensure regular vacuuming to prevent XID wraparound issues. Adjust the `autovacuum_freeze_max_age` parameter to trigger more frequent vacuuming on tables that don’t receive frequent updates.
+
+**Queries to monitor XID wraparound**:
+
+- **Check tables approaching wraparound**:
+```sql
+SELECT 
+    relname,
+    age(relfrozenxid) AS xid_age
+FROM 
+    pg_class
+WHERE 
+    relkind = 'r'  -- Only user tables
+    AND age(relfrozenxid) > 100000000;  -- Adjust threshold based on your system
+```
+This query identifies tables with XID ages approaching the wraparound limit, helping you target those that need more frequent vacuuming.
+
+- **Check current wraparound vacuum settings**:
+```sql
+SHOW autovacuum_freeze_max_age;
+SHOW vacuum_freeze_min_age;
+```
+You can adjust these settings to trigger vacuuming earlier if necessary, helping prevent wraparound.
+
+---
+
+### Conclusion
+
+By understanding the common autovacuum problems and their solutions, and using the provided PostgreSQL queries, you can effectively tune autovacuum to maintain a PostgreSQL database that performs efficiently over time. Regular monitoring and tuning are essential to avoid bloat, improve query performance, and maintain database health. With proper adjustments to autovacuum settings, you can prevent issues such as excessive resource consumption, slow queries, and transaction ID wraparound, ensuring that your PostgreSQL database remains optimized for both small and large workloads.
+
+---
+
+References:
+- https://www.youtube.com/watch?v=D832gi8Qrv4
