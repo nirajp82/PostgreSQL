@@ -59,6 +59,8 @@ SELECT
     relname,
     last_vacuum,
     last_autovacuum,
+	autovacuum_count,
+	vacuum_count,
     n_dead_tup,
     n_live_tup
 FROM
