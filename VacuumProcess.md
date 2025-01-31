@@ -47,6 +47,8 @@ Autovacuum triggers vacuuming based on specific thresholds and scale factors. He
    - **Example**: 
      - If you have a table with 1 million rows and 200,000 rows have been inserted, and the `autovacuum_vacuum_insert_scale_factor` is 0.2, autovacuum will be triggered once there are 40,000 dead tuples from those insert operations.
 
+![image](https://github.com/user-attachments/assets/019f7f52-a50d-47d0-a852-4eb484cc34df)
+
 **Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat (more disk space than necessary - because it has too many dead tuples (old, unused versions of rows) that haven't been cleaned up) and slower queries.
 
 **Solution**: Adjust the scale factors based on the table size and growth rate. You can also monitor when the last autovacuum ran using the `pg_stat_user_tables` view.
