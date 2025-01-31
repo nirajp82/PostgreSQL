@@ -32,6 +32,8 @@ The `autovacuum_naptime` parameter in PostgreSQL controls how often the autovacu
 #### 1. **Vacuum Isn't Triggered Often Enough**
 Autovacuum triggers vacuuming based on specific thresholds and scale factors. Here’s how to monitor if vacuum isn’t running often enough:
 
+![image](https://github.com/user-attachments/assets/019f7f52-a50d-47d0-a852-4eb484cc34df)
+
 **Key Parameters**:
 #### 1. **`autovacuum_vacuum_scale_factor`**
    - **Purpose**: This setting controls the threshold at which autovacuum will run a vacuum operation for **tables** that have been updated or deleted.
@@ -47,8 +49,6 @@ Autovacuum triggers vacuuming based on specific thresholds and scale factors. He
    - **Example**: 
      - If you have a table with 1 million rows and 200,000 rows have been inserted, and the `autovacuum_vacuum_insert_scale_factor` is 0.2, autovacuum will be triggered once there are 40,000 dead tuples from those insert operations.
 
-![image](https://github.com/user-attachments/assets/019f7f52-a50d-47d0-a852-4eb484cc34df)
-
 **Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat (more disk space than necessary - because it has too many dead tuples (old, unused versions of rows) that haven't been cleaned up) and slower queries.
 
 **Solution**: Adjust the scale factors based on the table size and growth rate. You can also monitor when the last autovacuum ran using the `pg_stat_user_tables` view.
@@ -56,17 +56,15 @@ Autovacuum triggers vacuuming based on specific thresholds and scale factors. He
 **Query to check the last autovacuum run**:
 ```sql
 SELECT
-    relname,
-    last_vacuum,
-    last_autovacuum,
-	autovacuum_count,
-	vacuum_count,
-    n_dead_tup,
-    n_live_tup
+    relname,  -- Name of the table (relation).
+    last_vacuum,  -- Timestamp of the last manual vacuum performed on the table.
+    last_autovacuum,  -- Timestamp of the last autovacuum run on the table.
+    autovacuum_count,  -- Number of times autovacuum has run on this table.
+    vacuum_count,  -- Number of times manual vacuum has run on this table.
+    n_dead_tup,  -- Number of dead tuples (obsolete rows) in the table.
+    n_live_tup  -- Number of live (active) tuples (rows) in the table.
 FROM
-    pg_stat_user_tables
-WHERE
-    schemaname = 'public';  -- Or your specific schema
+    pg_stat_user_tables;  -- View showing statistics for user tables.
 ```
 This query shows the last time vacuum and autovacuum were run on each table, as well as the number of dead tuples. If `last_autovacuum` is too old, it may indicate that autovacuum isn’t running often enough.
 
