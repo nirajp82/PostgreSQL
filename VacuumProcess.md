@@ -12,10 +12,14 @@ While autovacuum is essential, it isn't a one-size-fits-all solution. It require
 - **Large Database, High Transaction Rate**: If autovacuum isn't aggressive enough, it can lead to excessive bloat, consuming storage and slowing down queries.
 
 Thus, tuning autovacuum correctly is critical for maintaining optimal database performance and avoiding problems like performance degradation or excessive storage usage.
+- **`autovacuum_naptime`**
+The `autovacuum_naptime` parameter in PostgreSQL controls how often the autovacuum process wakes up and checks if it needs to run on any tables. 
+    - **Default value**: 1 minute (60 seconds).
+        - **Purpose**: It sets the time between two consecutive autovacuum checks. Every time the process wakes up, it checks if any tables have enough dead tuples to require vacuuming. If not, it goes back to sleep until the next interval.
+        - If you set it too short, it will check more often, using more CPU resources. If set too long, it may delay cleaning up bloat, leading to slower performance.
+        - The default value is 15 seconds for Amazon RDS for PostgreSQL and 5 seconds for Aurora PostgreSQL-Compatible.
 
 - **Note::** - By default its On, Do not turn off. 
-
----
 
 ### Common Autovacuum Problems and Solutions with Queries
 
