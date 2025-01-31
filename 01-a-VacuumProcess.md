@@ -93,8 +93,15 @@ If autovacuum is running too slowly, it might not be completing fast enough to k
   
     **Note:** Ensure that your system has sufficient **CPU cores** to handle the increased number of workers without degrading overall system performance.
 
-- **Diagnose Slowness**: Use `pg_stat_progress_vacuum` to pinpoint the bottleneck (e.g., heap scanning or index vacuuming).
-- **Optimize Heap Scanning and Index Vacuuming**: Increase buffer sizes and workers for parallel index vacuuming.
+- **Diagnose Slowness**  
+  Use the `pg_stat_progress_vacuum` view to identify where `VACUUM` is slow. It will show whether the process is stalled at **heap scanning** (data rows) or **index vacuuming**, helping you pinpoint the bottleneck.
+
+- **Optimize Heap Scanning**  
+  To improve heap scanning performance, increase **shared_buffers** to allocate more memory for caching, or use **pg_prewarm** to load tables and indexes into memory for faster access. This reduces disk I/O, speeding up vacuuming.
+
+- **Optimize Index Vacuuming**  
+  For better index vacuuming, increase the **max_parallel_maintenance_workers** parameter to enable parallel vacuuming of indexes. You can also increase **maintenance_work_mem** or **autovacuum_work_mem** to provide more memory, reducing the number of cycles needed for index cleanup.
+
 
 **Queries to help diagnose slowness**:
 
