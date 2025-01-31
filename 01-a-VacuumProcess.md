@@ -75,23 +75,23 @@ If autovacuum is running too slowly, it might not be completing fast enough to k
 **Signs of the problem**: Constantly running autovacuum processes, rising bloat, and slow queries.
 
 **Solution**:
-# Optimizing PostgreSQL Vacuum: Disabling Cost Limiting and Increasing Workers
+##### Optimizing PostgreSQL Vacuum: Disabling Cost Limiting and Increasing Workers
 
-- ##### **Disable Cost Limiting**
+- **Disable Cost Limiting**
 
-PostgreSQL’s `VACUUM` has a built-in **cost limit** to prevent it from consuming too many resources and overwhelming the system. For databases running on **SSDs**, this cost limiting is often unnecessary due to faster I/O speeds. In such cases, you can **disable** the cost limit by setting:
+    PostgreSQL’s `VACUUM` has a built-in **cost limit** to prevent it from consuming too many resources and overwhelming the system. For databases running on **SSDs**, this cost limiting is often unnecessary due to faster I/O speeds. In such cases, you can **disable** the cost limit by setting:
 
-- **`autovacuum_cost_delay` to 0** (No nap time for `VACUUM`).
+    - **`autovacuum_cost_delay` to 0** (No nap time for `VACUUM`).
   
-Alternatively, you can **increase** the `autovacuum_cost_limit` to a higher value (e.g., **10000**) to allow `VACUUM` to use more resources before taking breaks.
+    Alternatively, you can **increase** the `autovacuum_cost_limit` to a higher value (e.g., **10000**) to allow `VACUUM` to use more resources before taking breaks.
 
-- ##### **Increase Workers**
+-  **Increase Workers**
 
-To make the autovacuum process more efficient, especially on large databases, you can **increase** the number of worker processes available. This allows autovacuum to process multiple tables concurrently, reducing the overall time for cleanup.
+    To make the autovacuum process more efficient, especially on large databases, you can **increase** the number of worker processes available. This allows autovacuum to process multiple tables concurrently, reducing the overall time for cleanup.
 
-- **`autovacuum_max_workers`**: Increase this value to allow more concurrent vacuum processes.
+    - **`autovacuum_max_workers`**: Increase this value to allow more concurrent vacuum processes.
   
-**Note:** Ensure that your system has sufficient **CPU cores** to handle the increased number of workers without degrading overall system performance.
+    **Note:** Ensure that your system has sufficient **CPU cores** to handle the increased number of workers without degrading overall system performance.
 
 - **Diagnose Slowness**: Use `pg_stat_progress_vacuum` to pinpoint the bottleneck (e.g., heap scanning or index vacuuming).
 - **Optimize Heap Scanning and Index Vacuuming**: Increase buffer sizes and workers for parallel index vacuuming.
