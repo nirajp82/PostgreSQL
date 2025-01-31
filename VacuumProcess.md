@@ -13,8 +13,7 @@ While autovacuum is essential, it isn't a one-size-fits-all solution. It require
 For example:
 - **Small Database, Low Transaction Rate**: Overly aggressive vacuuming can consume excessive resources, negatively impacting query performance.
 - **Large Database, High Transaction Rate**: If autovacuum isn't aggressive enough, it can lead to excessive bloat, consuming storage and slowing down queries.
-- ![image](https://github.com/user-attachments/assets/71d9a3b4-8caa-4195-8d4b-06366352a580)
-
+-![image](https://github.com/user-attachments/assets/82385067-671a-4c65-984a-4e89bb856160)
 
 Thus, tuning autovacuum correctly is critical for maintaining optimal database performance and avoiding problems like performance degradation or excessive storage usage.
 - **`autovacuum_naptime`**
