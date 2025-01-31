@@ -34,10 +34,21 @@ The `autovacuum_naptime` parameter in PostgreSQL controls how often the autovacu
 Autovacuum triggers vacuuming based on specific thresholds and scale factors. Here’s how to monitor if vacuum isn’t running often enough:
 
 **Key Parameters**:
-- `autovacuum_vacuum_scale_factor`
-- `autovacuum_vacuum_insert_scale_factor`
+#### 1. **`autovacuum_vacuum_scale_factor`**
+   - **Purpose**: This setting controls the threshold at which autovacuum will run a vacuum operation for **tables** that have been updated or deleted.
+   - **How it works**: The value represents a fraction of the total number of rows in the table. Once the number of dead tuples (i.e., rows that have been updated or deleted but not yet cleaned up) exceeds the specified fraction of the total rows, autovacuum will trigger a vacuum.
+   - **Default value**: `0.2` (which means 20% of the table's rows)
+   - **Example**: 
+     - If you have a table with 1 million rows, and `autovacuum_vacuum_scale_factor` is set to 0.2, the autovacuum will trigger when there are 200,000 dead tuples in the table.
 
-**Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat and slower queries.
+#### 2. **`autovacuum_vacuum_insert_scale_factor`**
+   - **Purpose**: This setting controls when autovacuum will trigger a vacuum operation for **inserts**. It is similar to `autovacuum_vacuum_scale_factor`, but specifically for tables that primarily experience insert operations.
+   - **How it works**: The value represents a fraction of the number of inserted rows. When the number of dead tuples from insert operations exceeds the specified fraction, autovacuum will be triggered.
+   - **Default value**: `0.2` (same as the vacuum scale factor)
+   - **Example**: 
+     - If you have a table with 1 million rows and 200,000 rows have been inserted, and the `autovacuum_vacuum_insert_scale_factor` is 0.2, autovacuum will be triggered once there are 40,000 dead tuples from those insert operations.
+
+**Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat (more disk space than necessary - because it has too many dead tuples (old, unused versions of rows) that haven't been cleaned up) and slower queries.
 
 **Solution**: Adjust the scale factors based on the table size and growth rate. You can also monitor when the last autovacuum ran using the `pg_stat_user_tables` view.
 
