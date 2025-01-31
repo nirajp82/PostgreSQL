@@ -6,10 +6,15 @@ In PostgreSQL, when you **update** or **delete** a row, the old version of that 
 The **vacuum** process cleans up these dead tuples, reclaiming disk space and improving performance. You can run vacuum manually, but PostgreSQL also provides **autovacuum**, which is a background process that automatically triggers vacuuming on tables when necessary. Autovacuum runs periodically (default is every minute), checks which tables need vacuuming based on the number of dead tuples and inserts, and initiates vacuum processes for those tables.
 
 #### Why Tune Autovacuum?
-While autovacuum is essential, it isn't a one-size-fits-all solution. It requires proper tuning to work effectively. The optimal settings for autovacuum depend on the workload and size of the database. For example:
+**Purpose**: The job of autovacuum is to trigger the vacuum process automatically to vaccume different tables.
 
+While autovacuum is essential, it isn't a one-size-fits-all solution. It requires proper tuning to work effectively. The optimal settings for autovacuum depend on the workload and size of the database. 
+
+For example:
 - **Small Database, Low Transaction Rate**: Overly aggressive vacuuming can consume excessive resources, negatively impacting query performance.
 - **Large Database, High Transaction Rate**: If autovacuum isn't aggressive enough, it can lead to excessive bloat, consuming storage and slowing down queries.
+- ![image](https://github.com/user-attachments/assets/71d9a3b4-8caa-4195-8d4b-06366352a580)
+
 
 Thus, tuning autovacuum correctly is critical for maintaining optimal database performance and avoiding problems like performance degradation or excessive storage usage.
 - **`autovacuum_naptime`**
