@@ -108,15 +108,15 @@ This query will show you all autovacuum workers that are currently running. If y
 - **Monitor progress of running vacuum**:
 ```sql
 SELECT
-    relid::regclass AS table_name,
-    phase,
-    heap_blks_total,
-    heap_blks_scanned,
-    heap_blks_vacuumed
+    relid::regclass AS table_name,  -- The name of the table being vacuumed
+    phase,                        -- The current phase of the vacuum process (e.g., 'scan heap', 'vacuum heap', 'index vacuum')
+    heap_blks_total,              -- The total number of heap blocks in the table. (PostgreSQL stores table data on disk in files. These files are divided into fixed-size pages, and these pages are what we call heap blocks._
+    heap_blks_scanned,            -- The number of heap blocks scanned so far in the current phase
+    heap_blks_vacuumed             -- The number of heap blocks vacuumed so far in the current phase
 FROM
     pg_stat_progress_vacuum
-WHERE
-    phase = 'scan heap' OR phase = 'vacuum heap';
+--WHERE
+  --  phase = 'scan heap' OR phase = 'vacuum heap'; -- Filter to show progress for the heap scanning and vacuuming phases
 ```
 This query shows the current status of vacuuming processes, including how much of the table has been processed and the current phase (heap scan or vacuum).
 
