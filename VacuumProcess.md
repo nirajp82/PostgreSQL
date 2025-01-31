@@ -13,7 +13,6 @@ While autovacuum is essential, it isn't a one-size-fits-all solution. It require
 For example:
 - **Small Database, Low Transaction Rate**: Overly aggressive vacuuming can consume excessive resources, negatively impacting query performance.
 - **Large Database, High Transaction Rate**: If autovacuum isn't aggressive enough, it can lead to excessive bloat, consuming storage and slowing down queries.
--![image](https://github.com/user-attachments/assets/82385067-671a-4c65-984a-4e89bb856160)
 
 Thus, tuning autovacuum correctly is critical for maintaining optimal database performance and avoiding problems like performance degradation or excessive storage usage.
 - **`autovacuum_naptime`**
@@ -23,14 +22,14 @@ The `autovacuum_naptime` parameter in PostgreSQL controls how often the autovacu
         - If you set it too short, it will check more often, using more CPU resources. If set too long, it may delay cleaning up bloat, leading to slower performance.
         - The default value is 15 seconds for Amazon RDS for PostgreSQL and 5 seconds for Aurora PostgreSQL-Compatible.
 
-- **Note::** - By default its On, Do not turn off. 
+- **Note::** - By default its On, Do not turn off until and unless you know what you are doing.
 
 ### Common Autovacuum Problems and Solutions with Queries
 
 ---
 
 #### 1. **Vacuum Isn't Triggered Often Enough**
-Autovacuum triggers vacuuming based on specific thresholds and scale factors. Here’s how to monitor if vacuum isn’t running often enough:
+Autovacuum triggers vacuum based on scale factors and thresholds. The key parameters are:
 
 ![image](https://github.com/user-attachments/assets/019f7f52-a50d-47d0-a852-4eb484cc34df)
 
@@ -51,7 +50,7 @@ Autovacuum triggers vacuuming based on specific thresholds and scale factors. He
 
 **Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat (more disk space than necessary - because it has too many dead tuples (old, unused versions of rows) that haven't been cleaned up) and slower queries.
 
-**Solution**: Adjust the scale factors based on the table size and growth rate. You can also monitor when the last autovacuum ran using the `pg_stat_user_tables` view.
+**Solution**: Adjust the scale factors based on table size and growth rate. For large tables or very write-intensive workloads, use lower scale factors (e.g., instead of 0.02, which triggers vacuum when 20% of 1 billion rows is dead data, set it to something much lower like 0.002). Monitor the last autovacuum run time using the `pg_stat_user_tables` view.
 
 **Query to check the last autovacuum run**:
 ```sql
