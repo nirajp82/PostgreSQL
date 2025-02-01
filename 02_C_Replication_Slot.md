@@ -2,7 +2,6 @@
 
 Replication slots in PostgreSQL are a crucial mechanism for maintaining reliable replication to standby (replica) servers. They act as a "contract" between the primary and standby, guaranteeing that the standby can receive all necessary changes (Write-Ahead Log or WAL records), even if it's temporarily unavailable or lagging.
 
-![Replication Slot Diagram](https://mermaid.ink/p/eyJjb2RlIjoiZ3JhcGggTFIsClBSSU1BUlkocHJpbWFyeSBzZXJ2ZXIpIC0tPiBXT05fQ0hBTkdFcyhXQUwgcmVjb3Jkcyk7CldBTF9DSEFOR0VzIC0tPiBSRVBMSUNBVElPTl9TTE9UKG1hbmlmZXN0KTsKClJFUExJQ0FUSU9OX1NMT1QgLS0-IFdBTF9TRUdNRU5UUyAoV0FMIGZpbGVzKTsKV0FMX1NFR01FTlRzIC0tPiBTVEFOREJZKCBzdGFuZGJ5IHNlcnZlciApOwpTVkFOREJZIC0tPiBSRVBMSUNBVElPTl9TTE9UOiBBQ0tOT1dMRURHRU1FTlQ7IiwiaW5pdGlhbF9Db25maWcIjoie1wid2lkdGhcIjo2NDAsXCJoZWlnaHRcIjo0ODAsXCJ0aGVtZVwiOiJkZWZhdWx0In0ifQ)
 
 **(Diagram: Primary server generates WAL changes, which are tracked by a replication slot. The slot ensures WAL segments are retained until the standby server receives and acknowledges them.)**
 
