@@ -147,7 +147,7 @@ Sometimes, even after vacuum runs, dead tuples remain. This happens when other p
 
 - **Solutions for Autovacuum Issues:**
     - **Long-running Backends**:  
-          - Identify and terminate long-running backend processes using queries against `pg_stat_activity` and `pg_terminate_backend`.
+          - Identify and terminate long-running backend processes using queries against `pg_stat_activity` and `pg_terminate_backend()`.
           - Use `statement_timeout` or `log_min_duration_statement` to prevent this.
 
     - **Standby Queries**:  
