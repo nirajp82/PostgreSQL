@@ -54,8 +54,15 @@ Imagine a website with a user table.
 *   **Retry the Query:** The most common and often simplest approach is to simply retry the read query. By the time the query is retried, the conflict should be resolved, as the update will have been applied.  Applications should be designed to handle these retries gracefully.
 
 *   **`hot_standby_feedback`:** This setting on the standby server sends feedback to the primary server about which data is currently being read on the standby. The primary then avoids cleaning up (vacuuming) those rows, reducing the chance of conflicts. However, this can lead to bloat on the primary server if read queries on the standby are very long-running, as it prevents the primary from reclaiming space from dead tuples.
+    - **What it is**: A setting in PostgreSQL to prevent the primary server from removing rows that are still needed by a read-only standby server (a replica).
+    - **Why it's important**: Without this feedback, the primary server might remove (vacuum) rows that the standby server is still using, causing issues with replication.
+    - **How it helps**: When enabled, the replica sends feedback to the primary server, telling it not to vacuum certain rows until they are no longer needed. This keeps the replication process smooth.
 
 *   **`vacuum_defer_cleanup_age`:** This setting on the primary server delays the cleanup (vacuuming) of dead tuples. This gives standby queries more time to read the older versions of the data, reducing the likelihood of conflicts.  However, similar to `hot_standby_feedback`, this can also increase bloat on the primary server.
+
+    - **What it is**: A setting that controls how long the primary server will wait before cleaning up (vacuuming) rows that are still needed by the standby server.
+    - **Why it's important**: It ensures that the primary doesn’t vacuum rows too early, which could break the replication if the replica still needs those rows.
+    - **How it helps**: By setting this, you give the system a little extra time before cleaning up rows, ensuring the standby server has had enough time to catch up.
 
 *   **Transactions on the Standby (PostgreSQL 15 and later):** Using transactions on the standby server (available in PostgreSQL 15 and later) can help reduce replication conflicts.  A transaction provides a consistent snapshot of the data for the duration of the transaction.  If a conflict occurs, the transaction can be retried.
 
