@@ -20,6 +20,22 @@ Imagine a library (your database).  The primary server is like the main library 
 
 7.  **Error:** The standby server (smaller branch) typically throws an error, indicating a replication conflict. The read query (the person browsing) is interrupted and must be retried. The error message might say something like "could not serialize access due to concurrent update."
 
+8.  This query helps to identify long-running replication backends by inspecting their transaction ID (backend_xmin) and ordering them by the age of the transaction. It is useful to track replication-related processes and monitor any long-running or stuck replication backends.
+```sql
+SELECT
+    pid,                               -- Process ID of the replication backend
+    client_hostname,                   -- Hostname of the client connected to the replication backend
+    backend_xmin,                      -- Transaction ID associated with the backend (used to track old transaction data)
+    state,                             -- Current state of the replication process (e.g., streaming, waiting, etc.)
+    application_name                   -- Name of the application connected to the replication backend
+FROM
+    pg_stat_replication
+WHERE
+    backend_xmin IS NOT NULL          -- Filters to only include replication backends with an active transaction ID
+ORDER BY
+    age(backend_xmin) DESC;           -- Orders results by the age of the backend transaction, with the oldest backends appearing first
+```
+   
 **Why This Happens: The Hot Standby Trade-off**
 
 PostgreSQL replicas are usually "hot standbys," meaning they allow read queries. This is great for offloading read traffic from the primary. However, this introduces a challenge: the replica is constantly receiving updates from the primary. If a long-running read query is accessing data that is being updated concurrently on the primary, a conflict can arise.
