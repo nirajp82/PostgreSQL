@@ -19,7 +19,7 @@
     `VACUUM` often needs to scan entire tables. With `pg_prewarm`, you can proactively load these tables (or at least the most frequently accessed parts) into `shared_buffers` *before* `VACUUM` starts. This ensures that when `VACUUM` begins its heap scan, the data it needs is already in memory, resulting in a very fast scan.
 
 
-###- **What is a Heap Block?**
+- **What is a Heap Block?**
   - PostgreSQL stores table data on disk in files. These files are divided into fixed-size pages, and these pages are what we call heap blocks._ A heap block is a 8KB chunk of data stored on disk that contains a set of table rows (tuples). Each table in PostgreSQL is stored in a series of these blocks. 
   - PostgreSQL organizes the data in a heap structure, where rows are stored in no specific order within these blocks. As a result, the heap block is where the table's actual data resides, along with metadata such as row visibility information.
 
