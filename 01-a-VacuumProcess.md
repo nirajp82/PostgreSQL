@@ -139,17 +139,25 @@ If `autovacuum_cost_delay` is set to a non-zero value, you may want to consider 
 #### 3. **Dead Tuples Not Being Removed After Vacuum**
 Sometimes, even after vacuum runs, dead tuples remain. This happens when other processes still need those rows, such as long-running transactions or replication conflicts.
 
-**Possible causes**:
-- **Long-Running Backends**
-- **Standby Queries**
-- **Unused Replication Slots**
-- **Uncommitted Prepared Transactions**
+- **Reasons for Autovacuum Issues:**
+    - **Long-running Backends**: Old, open transactions can prevent vacuum from cleaning up rows accessed by those transactions.
+    - **Standby Queries**: Queries running on a hot standby replica can prevent vacuum from cleaning up rows on the primary.
+    - **Unused Replication Slots**: Stalled or unused replication slots (both physical and logical) can hold back cleanup, especially of catalog tables.
+    - **Uncommitted Prepared Transactions**: Uncommitted two-phase commit transactions can also block cleanup.
 
-**Solution**:
-- **Long-Running Backends**: Identify and terminate long-running queries.
-- **Standby Queries**: Balance hot standby feedback with vacuum defer cleanup age.
-- **Unused Replication Slots**: Drop unused replication slots.
-- **Uncommitted Prepared Transactions**: Rollback or commit prepared transactions.
+- **Solutions for Autovacuum Issues:**
+    - **Long-running Backends**:  
+          - Identify and terminate long-running backend processes using queries against `pg_stat_activity` and `pg_terminate_backend`.
+          - Use `statement_timeout` or `log_min_duration_statement` to prevent this.
+
+    - **Standby Queries**:  
+          - Balance `hot_standby_feedback` (which prevents cleanup on the primary) with `vacuum_defer_cleanup_age` (which delays cleanup) to minimize replication conflicts.
+
+    - **Unused Replication Slots**:  
+          - Drop unused replication slots using `pg_drop_replication_slot()`.
+
+    - **Uncommitted Prepared Transactions**:  
+          - Identify and commit or rollback prepared transactions using `pg_prepared_xact`.
 
 **Queries to help troubleshoot dead tuples**:
 
