@@ -2,7 +2,7 @@
 - **Shared Buffers:**
 
   - **What it is:**  
-    `shared_buffers` is a portion of RAM that PostgreSQL uses to cache frequently accessed data. Think of it as a staging area for data retrieved from disk.
+    `shared_buffers` is a portion (Extension of Postgre) of RAM that PostgreSQL uses to cache frequently accessed data. Think of it as a staging area for data retrieved from disk.
 
   - **How it helps:**  
     When `VACUUM` needs to scan a heap block (a page of data from a table), it first checks if that block is already in `shared_buffers`. If it is (a "cache hit"), `VACUUM` can access the data directly from memory, which is *much* faster than reading it from disk (a "cache miss").
