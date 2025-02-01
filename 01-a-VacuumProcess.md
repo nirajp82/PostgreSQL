@@ -161,12 +161,29 @@ Sometimes, even after vacuum runs, dead tuples remain. This happens when other p
 
 **Queries to help troubleshoot dead tuples**:
 
-- **Check for long-running transactions**:
-```sql
-SELECT pid, usename, state, query, age(clock_timestamp(), query_start) AS duration
-FROM pg_stat_activity
-WHERE state != 'idle'
-ORDER BY duration DESC;
+- **Check for long-running backend**:
+```sqlSELECT 
+    pid,                                -- Process ID of the backend process
+    datname,                             -- Name of the database the backend is connected to
+    usename,                             -- Username of the session running the query
+    application_name,
+	state,                               -- Current state of the backend process (e.g., active, idle)
+    backend_xmin,                        -- Transaction ID associated with the backend (used to track old transaction data)
+    xact_start,							  --The time when the transaction started (if applicable).
+    query_start,                         -- Timestamp of when the query started
+    age(backend_xmin) AS backend_age,    -- Age of the backend's transaction ID, indicating how long the backend has been running
+    client_addr,                         -- IP address of the client connected to the PostgreSQL instance
+    client_hostname,                     -- Hostname of the client (if available)
+    client_port,                         -- Port number of the client
+	--query,                               -- The actual SQL query being executed by the backend
+	state								  --The time when the transaction started (if applicable).
+FROM
+    pg_stat_activity
+WHERE
+    backend_xmin IS NOT NULL            -- Filters to only include rows where a transaction ID exists for the backend
+    --AND state = 'active'                -- Only includes active sessions (those currently executing queries)
+    --AND query_start < now() - interval '5 minutes'  -- Filters for queries that have been running for more
+order by age(backend_xmin)
 ```
 This will show you long-running queries and their durations. You can identify and terminate long-running queries that may be holding onto old tuples.
 
