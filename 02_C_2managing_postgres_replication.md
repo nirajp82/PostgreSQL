@@ -8,9 +8,14 @@ This document explains how to identify and manage replication slots with old tra
 The following query helps identify replication slots with old transactions:
 
 ```sql
-SELECT slot_name, slot_type, database, xmin, catalog_xmin
+SELECT
+    slot_name,  -- The unique name of the replication slot.
+    slot_type,  -- The type of the slot ('physical' or 'logical').
+    database,   -- The database associated with the slot (for logical slots).
+    xmin,       -- The oldest transaction ID the slot is preventing from being removed.
+    catalog_xmin -- The oldest transaction ID the slot is preventing from being removed from the system catalogs.
 FROM pg_replication_slots
-ORDER BY age(xmin), age(catalog_xmin) DESC;
+ORDER BY age(xmin), age(catalog_xmin) DESC; -- Order by xmin age (oldest first) and then catalog_xmin age (oldest first).
 ```
 
 Let's break down the columns returned by this query:
