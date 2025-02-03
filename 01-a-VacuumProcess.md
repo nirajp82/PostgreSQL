@@ -2,67 +2,9 @@
 
 In PostgreSQL, inserting data into a table should not normally create dead tuples immediately. However, under certain conditions, an INSERT can indirectly contribute to dead tuples. Let’s break it down:
 
-Understanding Dead Tuples
+#### Understanding Dead Tuples
 
 Dead tuples in PostgreSQL are row versions that are no longer visible to any active transaction. They occur because PostgreSQL uses MVCC (Multi-Version Concurrency Control), meaning that instead of modifying a row in place, PostgreSQL creates a new version of the row while marking the old version as “dead” when an update or delete happens.
-
-How Can INSERT Cause Dead Tuples?
-
-Even though INSERT does not modify existing tuples, it can lead to dead tuples in the following ways:
-
-1. Rollback of a Transaction
-	•	When you insert data inside a transaction but later ROLLBACK, all inserted rows become dead tuples since they are no longer visible to any transaction.
-	•	Example:
-
-BEGIN;
-INSERT INTO users (id, name) VALUES (1, 'John');
-ROLLBACK;  -- The inserted row becomes a dead tuple
-
-
-	•	The space is not immediately reclaimed until autovacuum cleans it up.
-
-2. Insert Conflict in ON CONFLICT DO UPDATE
-	•	If you use INSERT ... ON CONFLICT DO UPDATE, PostgreSQL first attempts an insert but may update an existing row instead. The old version of the updated row then becomes a dead tuple.
-	•	Example:
-
-INSERT INTO users (id, name) 
-VALUES (1, 'Alice') 
-ON CONFLICT (id) DO UPDATE 
-SET name = EXCLUDED.name;
-
-
-	•	If a row with id = 1 already exists, PostgreSQL will update it, creating a dead tuple of the previous version of that row.
-
-3. Insert Followed by DELETE in the Same Transaction
-	•	If you insert a row and then delete it within the same transaction, the inserted row becomes a dead tuple because it is no longer needed.
-	•	Example:
-
-BEGIN;
-INSERT INTO users (id, name) VALUES (2, 'Bob');
-DELETE FROM users WHERE id = 2;
-COMMIT;  -- The inserted row becomes dead
-
-
-
-4. High Insert/Delete Workloads Without Vacuuming
-	•	In workloads where a table gets frequent INSERTS followed by DELETEs, dead tuples accumulate quickly unless autovacuum runs efficiently.
-	•	Example:
-
-INSERT INTO logs (event, created_at) VALUES ('login_failed', now());
-DELETE FROM logs WHERE created_at < now() - interval '1 day';
-
-
-	•	If many inserts and deletes happen rapidly, and autovacuum lags, dead tuples increase.
-
-How to Handle Dead Tuples from Inserts?
-	•	Ensure autovacuum is running (SELECT * FROM pg_stat_all_tables WHERE relname = 'your_table' to check).
-	•	Manually run VACUUM ANALYZE your_table; if needed.
-	•	Use ON CONFLICT DO NOTHING instead of ON CONFLICT DO UPDATE where possible.
-	•	Partition large insert/delete tables to reduce dead tuples.
-	•	Use fillfactor settings to allow space for updates without immediate tuple invalidation.
-
-Would you like me to check dead tuples in your PostgreSQL database using a query?
-
 
 #### What is Vacuum and Autovacuum?
 In PostgreSQL, when you **update** or **delete** a row, the old version of that row isn't immediately removed. Instead, a new version is created, leaving the old one as a **"dead tuple"** or **obsolete tuple**. This approach allows other database connections to continue accessing the older version without interruption. However, over time, these dead tuples accumulate and consume disk space.
@@ -111,7 +53,57 @@ Autovacuum triggers vacuum based on scale factors and thresholds. The key parame
    - **Default value**: `0.2` (same as the vacuum scale factor)
    - **Example**: 
      - If you have a table with 1 million rows and 200,000 rows have been inserted, and the `autovacuum_vacuum_insert_scale_factor` is 0.2, autovacuum will be triggered once there are 40,000 dead tuples from those insert operations.
+   - How Can INSERT Cause Dead Tuples?  Even though INSERT does not modify existing tuples, it can lead to dead tuples in the following ways:
 
+		1. Rollback of a Transaction
+			•	When you insert data inside a transaction but later ROLLBACK, all inserted rows become dead tuples since they are no longer visible to any transaction.
+			•	Example:
+		```sql
+		BEGIN;
+		INSERT INTO users (id, name) VALUES (1, 'John');
+		ROLLBACK;  -- The inserted row becomes a dead tuple
+		```
+			•	The space is not immediately reclaimed until autovacuum cleans it up.
+		
+		2. Insert Conflict in ON CONFLICT DO UPDATE
+			•	If you use INSERT ... ON CONFLICT DO UPDATE, PostgreSQL first attempts an insert but may update an existing row instead. The old version of the updated row then becomes a dead tuple.
+			•	Example:
+		```sql
+		INSERT INTO users (id, name) 
+		VALUES (1, 'Alice') 
+		ON CONFLICT (id) DO UPDATE 
+		SET name = EXCLUDED.name;
+		```
+		
+			•	If a row with id = 1 already exists, PostgreSQL will update it, creating a dead tuple of the previous version of that row.
+		
+		3. Insert Followed by DELETE in the Same Transaction
+			•	If you insert a row and then delete it within the same transaction, the inserted row becomes a dead tuple because it is no longer needed.
+			•	Example:
+		```sql
+		BEGIN;
+		INSERT INTO users (id, name) VALUES (2, 'Bob');
+		DELETE FROM users WHERE id = 2;
+		COMMIT;  -- The inserted row becomes dead
+		```
+		
+		4. High Insert/Delete Workloads Without Vacuuming
+			•	In workloads where a table gets frequent INSERTS followed by DELETEs, dead tuples accumulate quickly unless autovacuum runs efficiently.
+			•	Example:
+		
+		```sql
+		INSERT INTO logs (event, created_at) VALUES ('login_failed', now());
+		DELETE FROM logs WHERE created_at < now() - interval '1 day';
+		```
+			•	If many inserts and deletes happen rapidly, and autovacuum lags, dead tuples increase.
+		
+		How to Handle Dead Tuples from Inserts?
+			•	Ensure autovacuum is running (SELECT * FROM pg_stat_all_tables WHERE relname = 'your_table' to check).
+			•	Manually run VACUUM ANALYZE your_table; if needed.
+			•	Use ON CONFLICT DO NOTHING instead of ON CONFLICT DO UPDATE where possible.
+			•	Partition large insert/delete tables to reduce dead tuples.
+			•	Use fillfactor settings to allow space for updates without immediate tuple invalidation. 
+	
 **Signs of the problem**: If dead tuples accumulate faster than expected, leading to bloat (more disk space than necessary - because it has too many dead tuples (old, unused versions of rows) that haven't been cleaned up) and slower queries.
 
 **Solution**: Adjust the scale factors based on table size and growth rate. For large tables or very write-intensive workloads, use lower scale factors (e.g., instead of 0.02, which triggers vacuum when 20% of 1 billion rows is dead data, set it to something much lower like 0.002). Monitor the last autovacuum run time using the `pg_stat_user_tables` view.
