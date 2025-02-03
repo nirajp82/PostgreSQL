@@ -30,9 +30,7 @@ The `autovacuum_naptime` parameter in PostgreSQL controls how often the autovacu
 
 - **Note::** - By default its On, Do not turn off until and unless you know what you are doing.
 
-### Common Autovacuum Problems and Solutions with Queries
-
----
+## Common Autovacuum Problems and Solutions with Queries
 
 #### 1. **Vacuum Isn't Triggered Often Enough**
 Autovacuum triggers vacuum based on scale factors and thresholds. The key parameters are:
@@ -125,7 +123,7 @@ This query shows the last time vacuum and autovacuum were run on each table, as 
 
 ---
 
-#### 2. **Vacuum Running Too Slowly**
+## 2. **Vacuum Running Too Slowly**
 If autovacuum is running too slowly, it might not be completing fast enough to keep up with the workload, leading to bloat.
 
 **Signs of the problem**: Constantly running autovacuum processes, rising bloat, and slow queries.
@@ -192,13 +190,13 @@ If `autovacuum_cost_delay` is set to a non-zero value, you may want to consider 
 
 ---
 
-#### 3. **Dead Tuples Not Being Removed After Vacuum**
+## 3. **Dead Tuples Not Being Removed After Vacuum**
 Sometimes, even after vacuum runs, dead tuples remain. This happens when other processes still need those rows, such as long-running transactions or replication conflicts.
 
 - **Reasons for Autovacuum Issues:**
     - **Long-running Backends**: Old, open transactions can prevent vacuum from cleaning up rows accessed by those transactions.
     - **Standby Queries**: Queries running on a hot standby replica can prevent vacuum from cleaning up rows on the primary.
-    - **Unused Replication Slots**: Stalled or unused replication slots (both physical and logical) can hold back cleanup, especially of catalog tables.
+    - **Unused Replication Slots**: Stalled or unused replication slots (both physical and logical) can hold back cleanup, especially of catalog tables. 
     - **Uncommitted Prepared Transactions**: Uncommitted two-phase commit transactions can also block cleanup.
 
 - **Solutions for Autovacuum Issues:**
