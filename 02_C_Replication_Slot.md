@@ -8,7 +8,7 @@ Each standby server is associated with a dedicated replication slot on the prima
 
 ## **What is a Replication Slot?**
 
-A **replication slot** is a persistent object on the primary server that tracks the state of replication for each connected standby. The primary server ensures that WAL logs are retained until the slot indicates that they are no longer required by the associated standby. Replication slots are critical for preventing the primary server from discarding WAL logs that are still needed for replication.
+A replication slot is a persistent object on the primary server that tracks the state of replication by storing a pointer to the Log Sequence Number (LSN), indicating where the replica should resume reading from the WAL. It ensures that WAL logs are retained until they are no longer needed by the replica, preventing premature deletion. Since replication slots need to track and store this state for each replica, they consume system resources, including memory and file descriptors, to maintain replication integrity.
 
 A single replication slot cannot be shared simultaneously by multiple standby databases (or replication clients). In PostgreSQL, a replication slot is tied to a specific replication connection (whether physical or logical). Each replication client (publisher or subscriber) needs its own replication slot to track its progress through the WAL stream.
 
