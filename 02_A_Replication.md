@@ -136,7 +136,7 @@ WITH (copy_data = true, -- defaults to true, performs initial snapshot copy
 
 ---
 
-## **8. Setting up Logical Rep
+## **8. Setting up Logical Rep**
 
 
 lication: Full Configuration Guide**
