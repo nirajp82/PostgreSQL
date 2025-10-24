@@ -1,4 +1,4 @@
-# **Mastering PostgreSQL Logical Replication: The Ultimate Deep-Dive Guide**
+# **PostgreSQL Logical Replication**
 
 ---
 
